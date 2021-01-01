@@ -1,0 +1,187 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="http://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+        <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+        
+    </head>
+    <body>
+        <div id="header" align="center">
+            <h1>hi</h1>
+            <form class="form-inline">
+                <div class="form-group">
+                    {{form.person(class="form-control")}}
+                </div>
+                <button type="submit" class="btn btn-info" onclick="loading();">Submit</button>
+            </form>
+        </div>
+        
+        <div id="tabs" align="center" style="display: none;">
+            <ul id="navbar"></ul>
+        </div>
+
+        <div id="loading" align="center"></div>
+        <div id="result" align="center">
+            <div id="all-result" align="center"></div>
+            <div id="twitter-result" align="center"></div>
+            <div id="instagram-result" align="center"></div>
+            <div id="youtube-result" align="center"></div>
+        </div>
+        
+        <script type="text/javascript">
+            function loading(){
+                $('#loading').show();
+                $("#result").hide();
+                $("#tabs").hide();   
+            }
+
+            function hideAll(){
+                $("#all-result").hide();
+                $("#twitter-result").hide();
+                $("#instagram-result").hide();
+                $("#youtube-result").hide();
+            }
+
+            function showAll(){
+                hideAll();
+                $("#all-result").show();
+            }
+
+            function showTwitter(){
+                hideAll();
+                $("#twitter-result").show();
+            }
+
+            function showInstagram(){
+                hideAll();
+                $("#instagram-result").show();
+            }
+
+            function showYoutube(){
+                hideAll();
+                $("#youtube-result").show();
+            }
+        </script>
+
+        <script>
+            window.twttr = (function(d, s, id) {
+                var js, fjs = d.getElementsByTagName(s)[0],
+                t = window.twttr || {};
+                if (d.getElementById(id)) return t;
+                js = d.createElement(s);
+                js.id = id;
+                js.src = "https://platform.twitter.com/widgets.js";
+                fjs.parentNode.insertBefore(js, fjs);
+            
+                t._e = [];
+                t.ready = function(f) {
+                    t._e.push(f);
+                };
+            
+                return t;
+            }(document, "script", "twitter-wjs"));
+        </script>
+
+        <script>
+            // get the list of people 
+            $(document).ready(function() {
+                var people = [];
+                function loadPeople(){
+                    $.getJSON('/people', function(data, status, xhr){
+                        for (var i = 0; i < data.length; i++) {
+                            people.push(data[i].name);
+                        }
+                    });
+                };
+                loadPeople();
+
+                $('#person').autocomplete({
+                    source: people,
+                })
+            });
+            
+            // handle the submit
+            $('form').on('submit', function(e) {
+                $.ajax({
+                    data: {
+                        person:$('#person').val()
+                    },
+                    type: 'POST',
+                    url: '/process'
+                })
+                .done(function(data) {
+                    if (data.error) {
+                        $('#all-result').text(data.error).show();
+                        $('#loading').hide();
+                    }
+                    else {
+                        $('#all-result').html(data.embeds).show();
+                        $("#result").show();
+                        $('#navbar').html(data.tabs);
+                        $('#tabs').show();
+                        $('#loading').hide();
+                        $('#twitter-result').html(data.twitter).hide();
+                        $('#instagram-result').html(data.instagram).hide();
+                        $('#youtube-result').html(data.youtube).hide();
+                        window.instgrm.Embeds.process();
+                        twttr.widgets.load(
+                            document.getElementById("result")
+                        );
+                    }
+                })
+                e.preventDefault();
+            })
+        </script>
+        <style>
+            .form-control {
+                display: block;
+                width:300px;
+                padding: .375rem .75rem;
+                font-size: 1rem;
+                line-height: 1.5;
+                color: #495057;
+                background-color: #fff;
+                background-clip: padding-box;
+                border: 1px solid #ced4da;
+                border-radius: .25rem;
+                transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+            }
+
+            .btn {padding: .375rem .75rem; margin-top:10px;}
+
+            div#loading {
+                height: 256px;
+                width: 256px;
+                display: none;
+                background: url("https://media3.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif") no-repeat;
+                cursor: wait;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            ul {
+                border-bottom: 2px solid lightgray;
+                margin-left: 1%;
+                margin-right: 1%;
+            }
+
+            .nav-tab {
+                display: inline-block;
+                background-color: lightgray;
+                padding: 10px 10px;
+                margin-right: 5px;
+                cursor: pointer;
+                border-top-left-radius: 10px;
+                border-top-right-radius: 10px;
+            }
+
+            .nav-tab:hover, .active {
+                background-color: gray;
+            }
+        </style>
+        <script src="https://instagram.com/static/bundles/es6/EmbedSDK.js/47c7ec92d91e.js"></script>
+        <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+    </body>
+</html>
+
