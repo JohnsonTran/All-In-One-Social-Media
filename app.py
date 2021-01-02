@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
+from flask_caching import Cache
 from os import environ
 from flask_celery import make_celery
 from celery import Celery
@@ -26,6 +27,9 @@ def create_app():
     )
 
     celery = make_celery(app)
+
+    cache = Cache(config={'CACHE_TYPE': 'simple'})
+    cache.init_app(app)
 
     db.init_app(app)
 

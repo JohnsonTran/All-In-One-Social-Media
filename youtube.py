@@ -12,7 +12,7 @@ api_key = environ.get('YOUTUBE_API_KEY')
 
 # create embed for a youtube video
 def make_embed(videoId):
-    return f'<iframe width="560" height="315" src="https://www.youtube.com/embed/{videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>'
+    return f'<div class="youtube-video"><iframe width="560" height="315" src="https://www.youtube.com/embed/{videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>'
 
 youtube = build('youtube', 'v3', developerKey=api_key)
 

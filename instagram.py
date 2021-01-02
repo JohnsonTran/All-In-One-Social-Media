@@ -149,7 +149,6 @@ def get_instagram_embed_and_time(acct_name):
                 
                 # get the embed for the post
                 params = {'url': post_url, 'access_token': access_token, 'omitscript': 'true'}
-                
                 embed = requests.get(embed_url, params).json()['html']
                 
                 time_posted = driver.find_element_by_xpath("//time[@class='_1o9PC Nzb55']").get_attribute('datetime')
