@@ -6,28 +6,25 @@
         <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
         
     </head>
+
     <body>
         <div id="header" align="center">
             <h1>All-in-One Social Media</h1>
-            <form class="form-inline">
+            <form class="form-inline" method="POST" action="/process">
                 <div class="form-group">
-                    {{form.person(class="form-control")}}
+                    {{ form.person(class="form-control") }}
                 </div>
                 <button type="submit" class="btn btn-info" onclick="loading();">Submit</button>
             </form>
         </div>
         
-        <div id="tabs" align="center" style="display: none;">
-            <ul id="navbar"></ul>
-        </div>
+        {% block navbar %}
+        {% endblock %}
 
         <div id="loading" align="center"></div>
-        <div id="result" align="center">
-            <div id="all-result" align="center"></div>
-            <div id="twitter-result" align="center"></div>
-            <div id="instagram-result" align="center"></div>
-            <div id="youtube-result" align="center"></div>
-        </div>
+
+        {% block content %}
+        {% endblock %}
         
         <script type="text/javascript">
             function loading(){
@@ -102,36 +99,36 @@
             });
             
             // handle the submit
-            $('form').on('submit', function(e) {
-                $.ajax({
-                    data: {
-                        person:$('#person').val()
-                    },
-                    type: 'POST',
-                    url: '/process'
-                })
-                .done(function(data) {
-                    if (data.error) {
-                        $('#all-result').text(data.error).show();
-                        $('#loading').hide();
-                    }
-                    else {
-                        $('#all-result').html(data.embeds).show();
-                        $("#result").show();
-                        $('#navbar').html(data.tabs);
-                        $('#tabs').show();
-                        $('#loading').hide();
-                        $('#twitter-result').html(data.twitter).hide();
-                        $('#instagram-result').html(data.instagram).hide();
-                        $('#youtube-result').html(data.youtube).hide();
-                        window.instgrm.Embeds.process();
-                        twttr.widgets.load(
-                            document.getElementById("result")
-                        );
-                    }
-                })
-                e.preventDefault();
-            })
+            // $('form').on('submit', function(e) {
+            //     $.ajax({
+            //         data: {
+            //             person:$('#person').val()
+            //         },
+            //         type: 'POST',
+            //         url: '/process'
+            //     })
+            //     .done(function(data) {
+            //         if (data.error) {
+            //             $('#all-result').text(data.error).show();
+            //             $('#loading').hide();
+            //         }
+            //         else {
+            //             $('#all-result').html(data.embeds).show();
+            //             $("#result").show();
+            //             $('#navbar').html(data.tabs);
+            //             $('#tabs').show();
+            //             $('#loading').hide();
+            //             $('#twitter-result').html(data.twitter).hide();
+            //             $('#instagram-result').html(data.instagram).hide();
+            //             $('#youtube-result').html(data.youtube).hide();
+            //             window.instgrm.Embeds.process();
+            //             twttr.widgets.load(
+            //                 document.getElementById("result")
+            //             );
+            //         }
+            //     })
+            //     e.preventDefault();
+            // })
         </script>
         <style>
             .form-control {

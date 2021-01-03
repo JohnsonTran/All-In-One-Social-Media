@@ -1,8 +1,8 @@
-from flask import Blueprint, render_template, request, jsonify, json
+from flask import Blueprint, render_template, request, jsonify, json, redirect, url_for
 from wtforms import StringField, TextField, Form
 from wtforms.validators import DataRequired
 from models.people_model import Person
-from app import db, celery, get_instagram, get_twitter, get_youtube
+from app import db, cache, celery, get_instagram, get_twitter, get_youtube
 from post import Post
 from celery import group
 
@@ -25,6 +25,12 @@ def peopledic():
 @home_bp.route("/process", methods=['POST'])
 def process():
     person = request.form['person']
+    return redirect(url_for('home_bp.result', person=person))
+
+@home_bp.route("/<person>")
+@cache.cached(timeout=1800)
+def result(person):
+    form = SearchForm(request.form)
     if person:
         person_info = Person.query.filter_by(name=person).first()
         twitter_name = person_info.twitter
@@ -74,6 +80,8 @@ def process():
         if youtube_res:
             tabs.append('<li class="nav-tab" id="youtube" onclick="showYoutube();">YouTube</li>')
         
-        return jsonify({'embeds': embeds, 'tabs': tabs, 'twitter': twitter_embeds, 'instagram': instagram_embeds, 'youtube': youtube_embeds})
+        data = {'embeds': embeds, 'tabs': tabs, 'twitter': twitter_embeds, 'instagram': instagram_embeds, 'youtube': youtube_embeds}
 
-    return jsonify({'error': 'missing data...'})
+        return render_template('profile.html', form=form, data=data)
+
+    return render_template('profile.html', form=form, data=None)

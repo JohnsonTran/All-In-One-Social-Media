@@ -12,9 +12,10 @@ from twitter import get_twitter_embed_and_time
 from instagram import get_instagram_embed_and_time
 from youtube import get_youtube_embed_and_time
 
-db = SQLAlchemy()
 celery = Celery(__name__, broker=environ.get('REDIS_SERVER_URL'),                       
                 backend=environ.get('REDIS_SERVER_URL'))
+cache = Cache(config={'CACHE_TYPE': 'simple'})
+db = SQLAlchemy()
 
 def create_app():
     app = Flask(__name__)
@@ -28,7 +29,6 @@ def create_app():
 
     celery = make_celery(app)
 
-    cache = Cache(config={'CACHE_TYPE': 'simple'})
     cache.init_app(app)
 
     db.init_app(app)
