@@ -1,8 +1,8 @@
-from flask import Blueprint, render_template, request, jsonify, json, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, json
 from wtforms import StringField, TextField, Form
 from wtforms.validators import DataRequired
 from models.people_model import Person
-from app import db, cache, celery, get_instagram, get_twitter, get_youtube
+from app import db, cache, celery, get_instagram, get_twitter, get_youtube, get_twitter_num
 from post import Post
 from celery import group
 
@@ -13,7 +13,7 @@ class SearchForm(Form):
 
 @home_bp.route("/")
 def home_page():
-    form = SearchForm(request.form)
+    form = SearchForm(request.args)
     return render_template("home.html", form=form)
 
 @home_bp.route("/people")
@@ -22,20 +22,19 @@ def peopledic():
     list_people = [r.as_dict() for r in res]
     return jsonify(list_people)
 
-@home_bp.route("/process", methods=['POST'])
+@home_bp.route("/process", methods=['GET'])
 def process():
-    person = request.form['person']
-    return redirect(url_for('home_bp.result', person=person))
-
-@home_bp.route("/<person>")
-@cache.cached(timeout=1800)
-def result(person):
-    form = SearchForm(request.form)
+    person = request.args.get('person')
+    form = SearchForm(request.args)
     if person:
         person_info = Person.query.filter_by(name=person).first()
         twitter_name = person_info.twitter
         youtube_id = person_info.youtube_id
         instagram_name = person_info.instagram
+
+        cache.set('twitter_name', twitter_name)
+        cache.set('youtube_id', youtube_id)
+        cache.set('instagram_name', instagram_name)
 
         posts = []
 
@@ -79,9 +78,37 @@ def result(person):
             tabs.append('<li class="nav-tab" id="instagram" onclick="showInstagram();">Instagram</li>')
         if youtube_res:
             tabs.append('<li class="nav-tab" id="youtube" onclick="showYoutube();">YouTube</li>')
-        
+
         data = {'embeds': embeds, 'tabs': tabs, 'twitter': twitter_embeds, 'instagram': instagram_embeds, 'youtube': youtube_embeds}
 
         return render_template('profile.html', form=form, data=data)
+        
+        # return jsonify({'embeds': embeds, 'tabs': tabs, 'twitter': twitter_embeds, 'instagram': instagram_embeds, 'youtube': youtube_embeds})
+    
+    return render_template('profile.html', form=form, data={})
+    # return jsonify({'error': 'missing data...'})
 
-    return render_template('profile.html', form=form, data=None)
+# gets more twitter data (for now) and returns it as a json
+@home_bp.route("/load")
+def load():
+    if request.args:
+        twitter_name = cache.get('twitter_name')
+        counter = int(request.args.get('c'))
+        print(counter)
+
+        job = group([get_twitter_num.s(twitter_name, counter)])
+        result = job.apply_async()
+        real_res = result.join()
+        twitter_res = real_res[0]
+        
+        twitter_embeds = []
+        for post in twitter_res:
+            time_posted, embed = post
+            twitter_embeds.append(embed)
+            # posts.append(Post('twitter', time_posted, embed))
+
+        print(twitter_embeds)
+        
+        return jsonify({'twitter': twitter_embeds})
+    
+    return jsonify({})

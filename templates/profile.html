@@ -34,4 +34,43 @@
         {% endfor %}
     </div>
 </div>
+
+<div id="sentinel" align="center" style="height: 20px;">
+    <div class="spinner-border" role="status"></div>
+</div>
+
+<script>
+
+    var twitterResult = document.querySelector('#twitter-result');
+    var sentinel = document.querySelector('#sentinel');
+
+    var twitterPage = 1;
+
+    function loadItems() {
+        twitterPage += 1;
+        fetch(`/load?c=${twitterPage}`).then((response) => {
+            response.json().then((data) => {
+                console.log(data);
+                if (!data.twitter.length) {
+                    sentinel.innerHTML = "No more posts";
+                }
+
+                for (var i = 0; i < data.twitter.length; i++) {
+                    twitterResult.insertAdjacentHTML('beforeend', data.twitter[i]);
+                }
+
+                twttr.widgets.load(document.getElementById("result"));
+            })
+        })
+    }
+
+    var intersectionObserver = new IntersectionObserver(entries => {
+        if (entries[0].intersectionRatio <= 0) {
+            return;
+        }
+        loadItems();
+    });
+    intersectionObserver.observe(sentinel);
+
+</script>
 {% endblock %}

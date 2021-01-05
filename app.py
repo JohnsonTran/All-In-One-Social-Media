@@ -8,7 +8,7 @@ from os import environ
 from flask_celery import make_celery
 from celery import Celery
 
-from twitter import get_twitter_embed_and_time
+from twitter import get_twitter_embed_and_time, get_twitter_embed_and_time_page
 from instagram import get_instagram_embed_and_time
 from youtube import get_youtube_embed_and_time
 
@@ -56,6 +56,13 @@ def get_twitter(twitter_name):
     twitter_posts = []
     if twitter_name:
             twitter_posts = get_twitter_embed_and_time(twitter_name)
+    return twitter_posts
+
+@celery.task()
+def get_twitter_num(twitter_name, page_num):
+    twitter_posts = []
+    if twitter_name:
+            twitter_posts = get_twitter_embed_and_time_page(twitter_name, page_num)
     return twitter_posts
 
 @celery.task()
