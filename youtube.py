@@ -16,7 +16,7 @@ def make_embed(videoId):
 
 youtube = build('youtube', 'v3', developerKey=api_key)
 
-def get_youtube_embed_and_time(youtube_id):
+def get_youtube_embed_and_time(youtube_id, next_page_token):
     posts = []
     if youtube_id:
         # get channel details
@@ -24,11 +24,15 @@ def get_youtube_embed_and_time(youtube_id):
         # get the uploads playlist
         uploads_id = content['items'][0]['contentDetails']['relatedPlaylists']['uploads']
         # get the 20 latest uploads
-        uploads = youtube.playlistItems().list(playlistId=uploads_id, part='snippet', maxResults=20).execute()
+        if next_page_token:
+            uploads = youtube.playlistItems().list(playlistId=uploads_id, part='snippet', maxResults=20, pageToken=next_page_token).execute()
+        else:
+            uploads = youtube.playlistItems().list(playlistId=uploads_id, part='snippet', maxResults=20).execute()
+        next_page_token = uploads['nextPageToken']
         # get the embed for each upload
         for upload in uploads['items']:
             embed = make_embed(upload['snippet']['resourceId']['videoId'])
             time_posted = upload['snippet']['publishedAt']
             posts.append((time_posted, embed))
     
-    return posts
+    return (posts, next_page_token)

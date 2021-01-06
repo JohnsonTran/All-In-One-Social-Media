@@ -27,37 +27,52 @@
         {% endblock %}
         
         <script type="text/javascript">
-            function loading(){
-                $('#loading').show();
+            function loading() {
+                $("#loading").show();
                 $("#result").hide();
                 $("#tabs").hide();   
             }
 
-            function hideAll(){
+            function hideAll() {
                 $("#all-result").hide();
                 $("#twitter-result").hide();
                 $("#instagram-result").hide();
                 $("#youtube-result").hide();
             }
 
-            function showAll(){
+            function removeActive() {
+                $("#all").removeClass('active');
+                $("#twitter").removeClass('active');
+                $("#instagram").removeClass('active');
+                $("#youtube").removeClass('active');
+            }
+
+            function showAll() {
                 hideAll();
+                removeActive();
                 $("#all-result").show();
+                $("#all").addClass('active');
             }
 
-            function showTwitter(){
+            function showTwitter() {
                 hideAll();
+                removeActive();
                 $("#twitter-result").show();
+                $("#twitter").addClass('active');
             }
 
-            function showInstagram(){
+            function showInstagram() {
                 hideAll();
+                removeActive();
                 $("#instagram-result").show();
+                $("#instagram").addClass('active');
             }
 
-            function showYoutube(){
+            function showYoutube() {
                 hideAll();
+                removeActive();
                 $("#youtube-result").show();
+                $("#youtube").addClass('active');
             }
         </script>
 

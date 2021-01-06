@@ -42,15 +42,17 @@
 <script>
 
     var twitterResult = document.querySelector('#twitter-result');
+    var twitterTab = document.querySelector('#twitter');
+    var youtubeResult = document.querySelector('#youtube-result');
+    var youtubeTab = document.querySelector('#youtube');
     var sentinel = document.querySelector('#sentinel');
 
     var twitterPage = 1;
 
-    function loadItems() {
+    function loadTwitter() {
         twitterPage += 1;
         fetch(`/load?c=${twitterPage}`).then((response) => {
             response.json().then((data) => {
-                console.log(data);
                 if (!data.twitter.length) {
                     sentinel.innerHTML = "No more posts";
                 }
@@ -64,11 +66,28 @@
         })
     }
 
+    function loadYouTube() {
+        fetch(`/load-youtube`).then((response) => {
+            response.json().then((data) => {
+                if (!data.youtube.length) {
+                    sentinel.innerHTML = "No more posts";
+                }
+
+                for (var i = 0; i < data.youtube.length; i++) {
+                    youtubeResult.insertAdjacentHTML('beforeend', data.youtube[i]);
+                }
+            })
+        })
+    }
+
     var intersectionObserver = new IntersectionObserver(entries => {
         if (entries[0].intersectionRatio <= 0) {
             return;
         }
-        loadItems();
+        if (twitterTab.classList.contains('active'))
+            loadTwitter();
+        else if (youtubeTab.classList.contains('active'))
+            loadYouTube();
     });
     intersectionObserver.observe(sentinel);
 

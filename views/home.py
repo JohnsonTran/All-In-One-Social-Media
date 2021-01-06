@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, jsonify, json
 from wtforms import StringField, TextField, Form
 from wtforms.validators import DataRequired
 from models.people_model import Person
-from app import db, cache, celery, get_instagram, get_twitter, get_youtube, get_twitter_num
+from app import db, cache, celery, get_instagram, get_twitter, get_youtube
 from post import Post
 from celery import group
 
@@ -39,13 +39,15 @@ def process():
         posts = []
 
         job = group([get_instagram.s(instagram_name), 
-                    get_twitter.s(twitter_name), 
-                    get_youtube.s(youtube_id)])
+                    get_twitter.s(twitter_name, 1), 
+                    get_youtube.s(youtube_id, None)])
         result = job.apply_async()
         real_res = result.join()
         instagram_res = real_res[0]
         twitter_res = real_res[1]
-        youtube_res = real_res[2]
+        youtube_res, youtube_next_page_token = real_res[2]
+
+        cache.set('youtube_next_page_token', youtube_next_page_token)
 
         youtube_embeds = []
         for post in youtube_res:
@@ -71,7 +73,7 @@ def process():
         for post in posts:
             embeds.append(post.embed)
 
-        tabs = ['<li class="nav-tab" id="all" onclick="showAll();">All</li>']   
+        tabs = ['<li class="nav-tab active" id="all" onclick="showAll();">All</li>']   
         if twitter_res:
             tabs.append('<li class="nav-tab" id="twitter" onclick="showTwitter();">Twitter</li>')
         if instagram_res:
@@ -82,7 +84,6 @@ def process():
         data = {'embeds': embeds, 'tabs': tabs, 'twitter': twitter_embeds, 'instagram': instagram_embeds, 'youtube': youtube_embeds}
 
         return render_template('profile.html', form=form, data=data)
-        
         # return jsonify({'embeds': embeds, 'tabs': tabs, 'twitter': twitter_embeds, 'instagram': instagram_embeds, 'youtube': youtube_embeds})
     
     return render_template('profile.html', form=form, data={})
@@ -96,19 +97,31 @@ def load():
         counter = int(request.args.get('c'))
         print(counter)
 
-        job = group([get_twitter_num.s(twitter_name, counter)])
-        result = job.apply_async()
-        real_res = result.join()
-        twitter_res = real_res[0]
+        result = get_twitter.delay(twitter_name, counter)
+        twitter_res = result.get()
         
         twitter_embeds = []
         for post in twitter_res:
             time_posted, embed = post
             twitter_embeds.append(embed)
-            # posts.append(Post('twitter', time_posted, embed))
-
-        print(twitter_embeds)
         
         return jsonify({'twitter': twitter_embeds})
     
     return jsonify({})
+
+@home_bp.route("/load-youtube")
+def load_youtube():
+    youtube_id = cache.get('youtube_id')
+    next_page_token = cache.get('youtube_next_page_token')
+
+    result = get_youtube.delay(youtube_id, next_page_token)
+    youtube_res, youtube_next_page_token = result.get()
+
+    cache.set('youtube_next_page_token', youtube_next_page_token)
+    
+    youtube_embeds = []
+    for post in youtube_res:
+        time_posted, embed = post
+        youtube_embeds.append(embed)
+    
+    return jsonify({'youtube': youtube_embeds})
