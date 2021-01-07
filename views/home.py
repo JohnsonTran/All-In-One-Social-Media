@@ -89,9 +89,9 @@ def process():
     return render_template('profile.html', form=form, data={})
     # return jsonify({'error': 'missing data...'})
 
-# gets more twitter data (for now) and returns it as a json
-@home_bp.route("/load")
-def load():
+# gets more twitter data and returns it as a json
+@home_bp.route("/load-twitter")
+def load_twitter():
     if request.args:
         twitter_name = cache.get('twitter_name')
         counter = int(request.args.get('c'))
@@ -109,6 +109,7 @@ def load():
     
     return jsonify({})
 
+# gets more youtube data and returns it as a json
 @home_bp.route("/load-youtube")
 def load_youtube():
     youtube_id = cache.get('youtube_id')

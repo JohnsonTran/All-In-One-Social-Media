@@ -51,7 +51,7 @@
 
     function loadTwitter() {
         twitterPage += 1;
-        fetch(`/load?c=${twitterPage}`).then((response) => {
+        fetch(`/load-twitter?c=${twitterPage}`).then((response) => {
             response.json().then((data) => {
                 if (!data.twitter.length) {
                     sentinel.innerHTML = "No more posts";
