@@ -11,7 +11,6 @@
 {% endblock %}
 
 {% block content %}
-<div id="loading" align="center"></div>
 <div id="result" align="center">
     <div id="all-result" align="center">
         {% for item in data['embeds'] %}
@@ -36,7 +35,7 @@
 </div>
 
 <div id="sentinel" align="center" style="height: 20px;">
-    <div class="spinner-border" role="status"></div>
+    <div id="loading-bottom" align="center"></div>
 </div>
 
 <script>

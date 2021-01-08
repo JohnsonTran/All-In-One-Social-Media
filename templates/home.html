@@ -175,6 +175,22 @@
                 margin-right: auto;
             }
 
+            div#loading-bottom {
+                border: 10px solid #f3f3f3;
+                border-top: 10px solid #000000;
+                border-radius: 50%;
+                width: 25px;
+                height: 25px;
+                animation: spin 1s linear infinite;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+
             ul {
                 border-bottom: 2px solid lightgray;
                 margin-left: 1%;
