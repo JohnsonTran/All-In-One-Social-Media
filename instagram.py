@@ -34,9 +34,10 @@ driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=option
 access_token = environ.get('INSTAGRAM_APP_ID') + '|' + environ.get('INSTAGRAM_CLIENT_ID')
 
 login_url = 'https://www.instagram.com/accounts/login/'
-embed_url = 'https://graph.facebook.com/v9.0/instagram_oembed'
 instagram_url = 'https://www.instagram.com'
+embed_url = 'https://graph.facebook.com/v9.0/instagram_oembed'
 
+# get rid of the '.' in the date time so it can be put into Firebase
 def normalize_datetime(time_posted):
     date_time = time_posted.split('T')
     date_time[1] = date_time[1][:date_time[1].index('.')]
@@ -70,9 +71,8 @@ def get_instagram_embed_and_time(acct_name):
             driver.get(acct_url)
 
         soup = BeautifulSoup(driver.page_source, 'lxml')
-
         res = firebase_app.get(f'/users/{acct_name}', None)
-        
+        cache = {}
         # get cache for users that exist in the database
         if res != None:
             # ping latest insta post - no change: grab from cache, else: pull again and change
@@ -94,7 +94,6 @@ def get_instagram_embed_and_time(acct_name):
                     posts.append(post)
             # get the new posts on the profile and update the cache
             else:
-                cache = {}
                 # find the difference from the current instagram and cache
                 for i, insta_post in enumerate(insta_posts):
                     post_name = insta_post.find('a')['href']
@@ -102,10 +101,6 @@ def get_instagram_embed_and_time(acct_name):
                         post_url = instagram_url + post_name
                         # go to the post
                         driver.get(post_url)
-                        # check if browser got redirected to login page
-                        if driver.current_url == login_url:
-                            login()
-                            driver.get(post_url)
 
                         # get the embed for the post
                         params = {'url': post_url, 'access_token': access_token, 'omitscript': 'true'}
@@ -133,19 +128,15 @@ def get_instagram_embed_and_time(acct_name):
                     cache[i] = {list(cache_post.keys())[0]: post_name}
                     i += 1
                 firebase_app.put('/users/', f'{acct_name}', {'latest': cache})
+        # user doesn't exist in the database
         else:
             # get the latest 12 posts on a profile
             insta_posts = soup.find_all(class_='v1Nh3 kIKUG _bz0w')
-            cache = {}
             for i, insta_post in enumerate(insta_posts):
                 post_name = insta_post.find('a')['href']
                 post_url = instagram_url + post_name
                 # go to the post
                 driver.get(post_url)
-                # check if browser got redirected to login page
-                if driver.current_url == login_url:
-                    login()
-                    driver.get(post_url)
                 
                 # get the embed for the post
                 params = {'url': post_url, 'access_token': access_token, 'omitscript': 'true'}
