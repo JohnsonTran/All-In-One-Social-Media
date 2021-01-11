@@ -17,21 +17,37 @@
             {{ item|safe }} 
         {% endfor %}
     </div>
+    {% if data['twitter'] %}
     <div id="twitter-result" align="center">
         {% for item in data['twitter'] %}
             {{ item|safe }} 
         {% endfor %}
     </div>
-    <div id="instagram-result" align="center">
+    {% endif %}
+    {% if data['instagram'] %}
+    <div id="instagram-result" align="center" onloadstart="cacheInstagram();">
         {% for item in data['instagram'] %}
             {{ item|safe }} 
         {% endfor %}
     </div>
+    <script type="text/javascript">
+        function cacheInstagram() {
+            fetch('/cache-instagram').then((response) => {
+                response.json().then((data) => {
+                    console.log('it works!');
+                })
+            })
+        }
+        cacheInstagram();
+     </script>
+    {% endif %}
+    {% if data['youtube'] %}
     <div id="youtube-result" align="center">
         {% for item in data['youtube'] %}
             {{ item|safe }} 
         {% endfor %}
     </div>
+    {% endif %}
 </div>
 
 <div id="sentinel" align="center" style="height: 20px;">
@@ -44,9 +60,12 @@
     var twitterTab = document.querySelector('#twitter');
     var youtubeResult = document.querySelector('#youtube-result');
     var youtubeTab = document.querySelector('#youtube');
+    var instagramResult = document.querySelector('#instagram-result');
+    var instagramTab = document.querySelector('#instagram');
     var sentinel = document.querySelector('#sentinel');
 
     var twitterPage = 1;
+    var instagramPage = 1;
 
     function loadTwitter() {
         twitterPage += 1;
@@ -66,7 +85,7 @@
     }
 
     function loadYouTube() {
-        fetch(`/load-youtube`).then((response) => {
+        fetch('/load-youtube').then((response) => {
             response.json().then((data) => {
                 if (!data.youtube.length) {
                     sentinel.innerHTML = "No more posts";
@@ -79,6 +98,22 @@
         })
     }
 
+    function loadInstagram() {
+        fetch(`/load-instagram?c=${instagramPage}`).then((response) => {
+            response.json().then((data) => {
+                if (!data.instagram.length) {
+                    sentinel.innerHTML = "No more posts";
+                }
+
+                for (var i = 0; i < data.instagram.length; i++) {
+                    instagramResult.insertAdjacentHTML('beforeend', data.instagram[i]);
+                }
+                instagramPage += 1;
+                window.instgrm.Embeds.process();
+            })
+        })
+    }
+
     var intersectionObserver = new IntersectionObserver(entries => {
         if (entries[0].intersectionRatio <= 0) {
             return;
@@ -87,6 +122,8 @@
             loadTwitter();
         else if (youtubeTab.classList.contains('active'))
             loadYouTube();
+        else if (instagramTab.classList.contains('active'))
+            loadInstagram();
     });
     intersectionObserver.observe(sentinel);
 

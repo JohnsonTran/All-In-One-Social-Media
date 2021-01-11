@@ -9,7 +9,7 @@ from flask_celery import make_celery
 from celery import Celery
 
 from twitter import get_twitter_embed_and_time
-from instagram import get_instagram_embed_and_time
+from instagram import get_instagram_embed_and_time, get_instagram_posts
 from youtube import get_youtube_embed_and_time
 
 celery = Celery(__name__, broker=environ.get('REDIS_SERVER_URL'),                       
@@ -63,4 +63,11 @@ def get_instagram(instagram_name):
     instagram_posts = []
     if instagram_name:
         instagram_posts = get_instagram_embed_and_time(instagram_name)
+    return instagram_posts
+
+@celery.task()
+def cache_instagram_posts(instagram_name):
+    instagram_posts = []
+    if instagram_name:
+        instagram_posts = get_instagram_posts(instagram_name)
     return instagram_posts

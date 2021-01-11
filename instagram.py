@@ -15,6 +15,7 @@ from post import Post
 from firebase import firebase
 
 from datetime import datetime
+import time
 
 load_dotenv(find_dotenv())
 
@@ -149,5 +150,50 @@ def get_instagram_embed_and_time(acct_name):
                 posts.append(post)
                 cache[i] = {time_posted: post_name}
             firebase_app.put('/users/', f'{acct_name}', {'latest': cache})
+    
+    return posts
+
+def get_instagram_posts(acct_name):
+    posts = []
+    if acct_name:
+        acct_url = f'https://www.instagram.com/{acct_name}/'
+
+        driver.get(acct_url)
+        # check if browser got redirected to login page
+        if driver.current_url == login_url:
+            login()
+            driver.get(acct_url)
+
+        SCROLL_PAUSE_TIME = 1.5
+
+        # Get scroll height
+        last_height = driver.execute_script("return document.body.scrollHeight")
+
+        all_posts = []
+        while True:
+            # Scroll down to bottom
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+            # Wait to load page
+            time.sleep(SCROLL_PAUSE_TIME)
+
+            # Calculate new scroll height and compare with last scroll height
+            new_height = driver.execute_script("return document.body.scrollHeight")
+            if new_height == last_height:
+                break
+            last_height = new_height
+
+            soup = BeautifulSoup(driver.page_source, 'lxml')
+
+            insta_posts = soup.find_all(class_='v1Nh3 kIKUG _bz0w')
+            all_posts = all_posts + insta_posts
+
+        post_names = []
+        for insta_post in all_posts:
+            post_name = insta_post.find('a')['href']
+            if post_name not in post_names:
+                post_names.append(post_name)
+
+                posts.append(post_name)
     
     return posts

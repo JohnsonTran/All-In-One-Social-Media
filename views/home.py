@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, jsonify, json
 from wtforms import StringField, TextField, Form
 from wtforms.validators import DataRequired
 from models.people_model import Person
-from app import db, cache, celery, get_instagram, get_twitter, get_youtube
+from app import db, cache, celery, get_instagram, get_twitter, get_youtube, cache_instagram_posts
 from post import Post
 from celery import group
 
@@ -126,3 +126,46 @@ def load_youtube():
         youtube_embeds.append(embed)
     
     return jsonify({'youtube': youtube_embeds})
+
+# gets more instagram posts and caches it for later
+@home_bp.route("/cache-instagram")
+def cache_instagram():
+    instagram_name = cache.get('instagram_name')
+
+    result = cache_instagram_posts.delay(instagram_name)
+    instagram_res = result.get()
+
+    cache.set('instagram_cache', instagram_res)
+    print('done!')
+    print(instagram_res)
+    return jsonify({'success': True})
+
+# gets more instagram posts and caches it for later
+from os import environ
+from dotenv import load_dotenv, find_dotenv
+import requests
+load_dotenv(find_dotenv())
+@home_bp.route("/load-instagram")
+def load_instagram():
+    if request.args:
+        instagram_name = cache.get('instagram_name')
+        counter = int(request.args.get('c'))
+        print(counter)
+
+        instagram_cache = cache.get('instagram_cache')
+
+        instagram_embeds = []
+        instagram_url = 'https://www.instagram.com'
+        embed_url = 'https://graph.facebook.com/v9.0/instagram_oembed'
+        access_token = environ.get('INSTAGRAM_APP_ID') + '|' + environ.get('INSTAGRAM_CLIENT_ID')
+
+        for post in instagram_cache[counter * 12: (counter + 1) * 12]:
+            post_name = post
+            post_url = instagram_url + post_name
+            params = {'url': post_url, 'access_token': access_token, 'omitscript': 'true'}
+            embed = requests.get(embed_url, params).json()['html']
+            instagram_embeds.append(embed)
+        
+        return jsonify({'instagram': instagram_embeds})
+    
+    return jsonify({})
