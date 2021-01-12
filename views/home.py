@@ -136,7 +136,6 @@ def cache_instagram():
     instagram_res = result.get()
 
     cache.set('instagram_cache', instagram_res)
-    print('done!')
     print(instagram_res)
     return jsonify({'success': True})
 
@@ -150,7 +149,6 @@ def load_instagram():
     if request.args:
         instagram_name = cache.get('instagram_name')
         counter = int(request.args.get('c'))
-        print(counter)
 
         instagram_cache = cache.get('instagram_cache')
 
@@ -159,9 +157,11 @@ def load_instagram():
         embed_url = 'https://graph.facebook.com/v9.0/instagram_oembed'
         access_token = environ.get('INSTAGRAM_APP_ID') + '|' + environ.get('INSTAGRAM_CLIENT_ID')
 
+        # delay embed request to lower the chance of reaching the embed API limit 
         for post in instagram_cache[counter * 12: (counter + 1) * 12]:
             post_name = post
             post_url = instagram_url + post_name
+            
             params = {'url': post_url, 'access_token': access_token, 'omitscript': 'true'}
             embed = requests.get(embed_url, params).json()['html']
             instagram_embeds.append(embed)

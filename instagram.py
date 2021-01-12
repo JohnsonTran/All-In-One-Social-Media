@@ -117,17 +117,18 @@ def get_instagram_embed_and_time(acct_name):
                         break
                 # add the rest of the cache
                 for cache_post in firebase_cache:
-                    post_name = list(cache_post.values())[0]
-                    post_url = instagram_url + post_name
+                    if i < 12:
+                        post_name = list(cache_post.values())[0]
+                        post_url = instagram_url + post_name
 
-                    # get the embed for the post
-                    params = {'url': post_url, 'access_token': access_token, 'omitscript': 'true'}
-                    embed = requests.get(embed_url, params).json()['html']
+                        # get the embed for the post
+                        params = {'url': post_url, 'access_token': access_token, 'omitscript': 'true'}
+                        embed = requests.get(embed_url, params).json()['html']
 
-                    post = (list(cache_post.keys())[0], embed)
-                    posts.append(post)
-                    cache[i] = {list(cache_post.keys())[0]: post_name}
-                    i += 1
+                        post = (list(cache_post.keys())[0], embed)
+                        posts.append(post)
+                        cache[i] = {list(cache_post.keys())[0]: post_name}
+                        i += 1
                 firebase_app.put('/users/', f'{acct_name}', {'latest': cache})
         # user doesn't exist in the database
         else:
@@ -153,6 +154,7 @@ def get_instagram_embed_and_time(acct_name):
     
     return posts
 
+# get at most 180 posts from an instagram page to cache for infinite scroll
 def get_instagram_posts(acct_name):
     posts = []
     if acct_name:
@@ -166,18 +168,18 @@ def get_instagram_posts(acct_name):
 
         SCROLL_PAUSE_TIME = 1.5
 
-        # Get scroll height
+        # get scroll height
         last_height = driver.execute_script("return document.body.scrollHeight")
 
-        all_posts = []
+        posts = []
         while True:
-            # Scroll down to bottom
+            # scroll down to bottom
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
-            # Wait to load page
+            # wait to load page
             time.sleep(SCROLL_PAUSE_TIME)
 
-            # Calculate new scroll height and compare with last scroll height
+            # calculate new scroll height and compare with last scroll height
             new_height = driver.execute_script("return document.body.scrollHeight")
             if new_height == last_height:
                 break
@@ -186,14 +188,12 @@ def get_instagram_posts(acct_name):
             soup = BeautifulSoup(driver.page_source, 'lxml')
 
             insta_posts = soup.find_all(class_='v1Nh3 kIKUG _bz0w')
-            all_posts = all_posts + insta_posts
-
-        post_names = []
-        for insta_post in all_posts:
-            post_name = insta_post.find('a')['href']
-            if post_name not in post_names:
-                post_names.append(post_name)
-
-                posts.append(post_name)
+            for insta_post in insta_posts:
+                post_name = insta_post.find('a')['href']
+                if post_name not in posts:
+                    posts.append(post_name)
+                    # limit to only 180 posts because of 200 API request limit
+                    if len(posts) >= 180:
+                        break
     
     return posts
