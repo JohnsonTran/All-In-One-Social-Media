@@ -35,6 +35,7 @@ def process():
         cache.set('twitter_name', twitter_name)
         cache.set('youtube_id', youtube_id)
         cache.set('instagram_name', instagram_name)
+        cache.set('instagram_cache', [])
 
         posts = []
 
@@ -150,14 +151,18 @@ def load_instagram():
         instagram_name = cache.get('instagram_name')
         counter = int(request.args.get('c'))
 
-        instagram_cache = cache.get('instagram_cache')
-
         instagram_embeds = []
         instagram_url = 'https://www.instagram.com'
         embed_url = 'https://graph.facebook.com/v9.0/instagram_oembed'
         access_token = environ.get('INSTAGRAM_APP_ID') + '|' + environ.get('INSTAGRAM_CLIENT_ID')
 
-        # delay embed request to lower the chance of reaching the embed API limit 
+        # busy wait until the posts are put into the cache
+        while cache.get('instagram_cache') == []:
+            pass
+
+        instagram_cache = cache.get('instagram_cache')
+
+        # delay embed request to lower the chance of reaching the embed API limit
         for post in instagram_cache[counter * 12: (counter + 1) * 12]:
             post_name = post
             post_url = instagram_url + post_name

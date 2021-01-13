@@ -60,6 +60,27 @@ def login():
     # wait for log in to complete
     wait = WebDriverWait(driver, 10).until(EC.staleness_of(username))
 
+# get a specified number of posts on an instagram page and make a cache of the posts for firebase
+def get_posts_and_cache(insta_posts, cache, num=12):
+    posts = []
+    for i in range(num):
+        post_name = insta_posts[i].find('a')['href']
+        post_url = instagram_url + post_name
+        # go to the post
+        driver.get(post_url)
+        
+        # get the embed for the post
+        params = {'url': post_url, 'access_token': access_token, 'omitscript': 'true'}
+        embed = requests.get(embed_url, params).json()['html']
+        
+        time_posted = driver.find_element_by_xpath("//time[@class='_1o9PC Nzb55']").get_attribute('datetime')
+        time_posted = normalize_datetime(time_posted)
+
+        post = (time_posted, embed)
+        posts.append(post)
+        cache[i] = {time_posted: post_name}
+    return posts
+
 def get_instagram_embed_and_time(acct_name):
     posts = []
     if acct_name:
@@ -96,60 +117,35 @@ def get_instagram_embed_and_time(acct_name):
             # get the new posts on the profile and update the cache
             else:
                 # find the difference from the current instagram and cache
-                for i, insta_post in enumerate(insta_posts):
+                diff = 0
+                for insta_post in insta_posts:
                     post_name = insta_post.find('a')['href']
                     if post_name != latest_cache_post:
-                        post_url = instagram_url + post_name
-                        # go to the post
-                        driver.get(post_url)
-
-                        # get the embed for the post
-                        params = {'url': post_url, 'access_token': access_token, 'omitscript': 'true'}
-                        embed = requests.get(embed_url, params).json()['html']
-                        
-                        time_posted = driver.find_element_by_xpath("//time[@class='_1o9PC Nzb55']").get_attribute('datetime')
-                        time_posted = normalize_datetime(time_posted)
-
-                        post = (time_posted, embed)
-                        posts.append(post)
-                        cache[i] = {time_posted: post_name}
-                    else:
                         break
+                    diff += 1
+                posts = get_posts_and_cache(insta_posts, cache, diff)
+
                 # add the rest of the cache
-                for cache_post in firebase_cache:
-                    if i < 12:
-                        post_name = list(cache_post.values())[0]
-                        post_url = instagram_url + post_name
+                i = 0
+                while diff < 12:
+                    post_name = list(firebase_cache[i].values())[0]
+                    post_url = instagram_url + post_name
 
-                        # get the embed for the post
-                        params = {'url': post_url, 'access_token': access_token, 'omitscript': 'true'}
-                        embed = requests.get(embed_url, params).json()['html']
+                    # get the embed for the post
+                    params = {'url': post_url, 'access_token': access_token, 'omitscript': 'true'}
+                    embed = requests.get(embed_url, params).json()['html']
 
-                        post = (list(cache_post.keys())[0], embed)
-                        posts.append(post)
-                        cache[i] = {list(cache_post.keys())[0]: post_name}
-                        i += 1
+                    post = (list(cache_post.keys())[0], embed)
+                    posts.append(post)
+                    cache[diff] = {list(cache_post.keys())[0]: post_name}
+                    i += 1
+                    diff += 1
                 firebase_app.put('/users/', f'{acct_name}', {'latest': cache})
         # user doesn't exist in the database
         else:
             # get the latest 12 posts on a profile
             insta_posts = soup.find_all(class_='v1Nh3 kIKUG _bz0w')
-            for i, insta_post in enumerate(insta_posts):
-                post_name = insta_post.find('a')['href']
-                post_url = instagram_url + post_name
-                # go to the post
-                driver.get(post_url)
-                
-                # get the embed for the post
-                params = {'url': post_url, 'access_token': access_token, 'omitscript': 'true'}
-                embed = requests.get(embed_url, params).json()['html']
-                
-                time_posted = driver.find_element_by_xpath("//time[@class='_1o9PC Nzb55']").get_attribute('datetime')
-                time_posted = normalize_datetime(time_posted)
-
-                post = (time_posted, embed)
-                posts.append(post)
-                cache[i] = {time_posted: post_name}
+            posts = get_posts_and_cache(insta_posts, cache)
             firebase_app.put('/users/', f'{acct_name}', {'latest': cache})
     
     return posts
