@@ -167,7 +167,7 @@ def get_instagram_posts(acct_name):
         # get scroll height
         last_height = driver.execute_script("return document.body.scrollHeight")
 
-        posts = []
+        posts = {}
         while True:
             # scroll down to bottom
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
@@ -187,9 +187,9 @@ def get_instagram_posts(acct_name):
             for insta_post in insta_posts:
                 post_name = insta_post.find('a')['href']
                 if post_name not in posts:
-                    posts.append(post_name)
+                    posts[post_name] = None
                     # limit to only 180 posts because of 200 API request limit
-                    if len(posts) >= 180:
+                    if len(posts.keys()) >= 180:
                         break
     
-    return posts
+    return list(posts.keys())
