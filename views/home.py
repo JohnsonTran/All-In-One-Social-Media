@@ -22,8 +22,8 @@ def peopledic():
     list_people = [r.as_dict() for r in res]
     return jsonify(list_people)
 
-@home_bp.route("/process", methods=['GET'])
-def process():
+@home_bp.route("/search", methods=['GET'])
+def search():
     person = request.args.get('person')
     form = SearchForm(request.args)
     if person:
@@ -85,20 +85,18 @@ def process():
         data = {'embeds': embeds, 'tabs': tabs, 'twitter': twitter_embeds, 'instagram': instagram_embeds, 'youtube': youtube_embeds}
 
         return render_template('profile.html', form=form, data=data)
-        # return jsonify({'embeds': embeds, 'tabs': tabs, 'twitter': twitter_embeds, 'instagram': instagram_embeds, 'youtube': youtube_embeds})
     
     return render_template('profile.html', form=form, data={})
-    # return jsonify({'error': 'missing data...'})
 
 # gets more twitter data and returns it as a json
 @home_bp.route("/load-twitter")
 def load_twitter():
     if request.args:
         twitter_name = cache.get('twitter_name')
-        counter = int(request.args.get('c'))
-        print(counter)
+        page = int(request.args.get('page'))
+        print(page)
 
-        result = get_twitter.delay(twitter_name, counter)
+        result = get_twitter.delay(twitter_name, page)
         twitter_res = result.get()
         
         twitter_embeds = []
@@ -149,7 +147,7 @@ load_dotenv(find_dotenv())
 def load_instagram():
     if request.args:
         instagram_name = cache.get('instagram_name')
-        counter = int(request.args.get('c'))
+        page = int(request.args.get('page'))
 
         instagram_embeds = []
         instagram_url = 'https://www.instagram.com'
@@ -163,7 +161,7 @@ def load_instagram():
         instagram_cache = cache.get('instagram_cache')
 
         # delay embed request to lower the chance of reaching the embed API limit
-        for post in instagram_cache[counter * 12: (counter + 1) * 12]:
+        for post in instagram_cache[page * 12: (page + 1) * 12]:
             post_name = post
             post_url = instagram_url + post_name
             
